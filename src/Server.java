@@ -1,6 +1,10 @@
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -9,25 +13,20 @@ import java.util.Arrays;
 
 public class Server {
 
-    private final ServerSocketChannel serverSocketChannel;
+    private final ServerSocket serverSocket;
 
-    public Server(String adress, int port) throws IOException {
-        serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress(adress, port));
+    public Server(int port) throws IOException {
+        serverSocket = new ServerSocket(port);
     }
 
     public void readCalculateAndResponse() {
-        try (SocketChannel socketChannel = serverSocketChannel.accept()) {
+        try (Socket socket = serverSocket.accept()) {
             while (true) {
-                ByteBuffer buffer = ByteBuffer.allocate(2 << 10);
-                int count = 0;
-                while (socketChannel.isConnected()) {
-                    count = socketChannel.read(buffer);
-                    if (count == -1) break;
-                    String msg = new String(buffer.array(), 0, count, StandardCharsets.UTF_8);
-                    buffer.clear();
-                    //response
-                    socketChannel.write(ByteBuffer.wrap(calculate(msg).getBytes(StandardCharsets.UTF_8)));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String msg;
+                while ((msg = in.readLine()) != null ) {
+                    out.println(calculate(msg));
                 }
             }
         } catch (IOException e) {
